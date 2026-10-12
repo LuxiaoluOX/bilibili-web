@@ -6,29 +6,33 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { App as AntApp, ConfigProvider, Result } from "antd";
 
 import type { Route } from "./+types/root";
+import "antd/dist/reset.css";
 import "./app.css";
+import "./components/component-library.css";
+import { workbenchTheme } from "./theme";
+import { ActionButton } from "./components/actions/action-button";
+
+const runtimeNodeEnv = import.meta.env.DEV ? "development" : "production";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
+  { rel: "icon", href: "/brand/delta-force-icon.png", type: "image/png" },
+  { rel: "apple-touch-icon", href: "/brand/delta-force-icon.png" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `globalThis.process ??= { env: { NODE_ENV: ${JSON.stringify(runtimeNodeEnv)} } };`,
+          }}
+        />
         <Meta />
         <Links />
       </head>
@@ -42,19 +46,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <ConfigProvider theme={workbenchTheme}>
+      <AntApp message={{ maxCount: 3, duration: 2.5 }} notification={{ placement: "topRight", maxCount: 3 }}>
+        <Outlet />
+      </AntApp>
+    </ConfigProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
+  let status: "404" | "500" | "403" = "500";
+  let message = "页面暂时不可用";
+  let details = "发生了未预期的错误，请稍后重试。";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    status = error.status === 404 ? "404" : error.status === 403 ? "403" : "500";
+    message = error.status === 404 ? "页面不存在" : error.status === 403 ? "没有访问权限" : "请求处理失败";
     details =
       error.status === 404
-        ? "The requested page could not be found."
+        ? "你访问的地址不存在，或页面已经移动。"
         : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
@@ -62,9 +74,8 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="error-page">
+      <Result status={status} title={message} subTitle={details} extra={<ActionButton kind="primary" to="/">返回工作台</ActionButton>} />
       {stack && (
         <pre className="w-full p-4 overflow-x-auto">
           <code>{stack}</code>

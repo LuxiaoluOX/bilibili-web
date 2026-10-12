@@ -1,0 +1,30 @@
+{
+	admin 127.0.0.1:2019
+}
+
+sjz.lx-zero.cn {
+	encode zstd gzip
+
+	@sensitive path /.env* /.git/* /node_modules/* /package.json /package-lock.json
+	respond @sensitive 404
+
+	# The deploy script atomically replaces this tiny file and gracefully reloads
+	# Caddy only after the standby application has passed its health check.
+	import /etc/caddy/sjz-upstream.caddy
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		format json
+	}
+}
+
+sjz-zero.duckdns.org {
+	redir https://sjz.lx-zero.cn{uri} permanent
+}

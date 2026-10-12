@@ -1,0 +1,25 @@
+[Unit]
+Description=SJZ Web application
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sjz
+Group=sjz
+WorkingDirectory=/opt/sjz/current
+EnvironmentFile=/opt/sjz/shared/app.env
+Environment=NODE_OPTIONS=--max-old-space-size=512
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/sjz
+
+[Install]
+WantedBy=multi-user.target

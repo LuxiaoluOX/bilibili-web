@@ -1,0 +1,11 @@
+[Unit]
+Description=Run SJZ release cleanup shortly after deployments
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=sjz-release-cleanup.service
+
+[Install]
+WantedBy=timers.target

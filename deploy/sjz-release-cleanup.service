@@ -1,0 +1,10 @@
+[Unit]
+Description=Clean old SJZ releases when the application is healthy
+After=sjz-web.service sjz-worker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sjz-post-deploy-cleanup --keep 3
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

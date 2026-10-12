@@ -1,0 +1,62 @@
+.action-button{font-weight:600;white-space:nowrap;border-radius:10px;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease,filter .2s ease}
+.action-button:not(:disabled):active{transform:translateY(1px)}
+.action-button-primary.ant-btn-color-primary.ant-btn-variant-solid{
+  border-color:#0a8f99;
+  background:linear-gradient(135deg,#087f88 0%,#0b9da8 48%,#29b7aa 100%);
+  box-shadow:0 7px 16px rgb(11 157 168 / 18%);
+}
+.action-button-primary.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):hover{
+  border-color:#087f88;
+  background:linear-gradient(135deg,#076f77 0%,#098f99 48%,#20a99d 100%);
+  box-shadow:0 9px 20px rgb(11 157 168 / 24%);
+  filter:saturate(1.04);
+}
+.action-button-secondary.ant-btn-variant-outlined{
+  border-color:#d7dfdc;
+  background:linear-gradient(180deg,#ffffff 0%,#f4f7f6 100%);
+  box-shadow:0 2px 5px rgb(25 45 41 / 5%);
+}
+.action-button-secondary.ant-btn-variant-outlined:not(:disabled):hover{
+  border-color:#8bc9c6;
+  background:linear-gradient(180deg,#ffffff 0%,#eaf7f5 100%);
+  box-shadow:0 5px 12px rgb(11 157 168 / 10%);
+}
+.action-button-tertiary.ant-btn-variant-text:not(:disabled):hover{
+  background:linear-gradient(135deg,#f2f7f6 0%,#e7f4f2 100%);
+}
+.action-button-dangerPrimary.ant-btn-color-danger.ant-btn-variant-solid{
+  border-color:#cc454b;
+  background:linear-gradient(135deg,#bd3948 0%,#d84f4f 52%,#ed6a5e 100%);
+  box-shadow:0 7px 16px rgb(216 79 79 / 17%);
+}
+.action-button-dangerPrimary.ant-btn-color-danger.ant-btn-variant-solid:not(:disabled):hover{
+  border-color:#b73542;
+  background:linear-gradient(135deg,#aa3140 0%,#c94448 52%,#dc5a51 100%);
+  box-shadow:0 9px 20px rgb(216 79 79 / 22%);
+}
+.action-button-link.ant-btn-variant-link,.action-button-danger.ant-btn-variant-link{border-radius:8px}
+.action-button-link.ant-btn-variant-link:not(:disabled):hover{background:linear-gradient(135deg,#edf9f7 0%,#e2f4f2 100%)}
+.action-button-danger.ant-btn-variant-link:not(:disabled):hover{background:linear-gradient(135deg,#fff4f2 0%,#ffe8e5 100%)}
+.action-button-page{min-height:40px}
+.action-button-row{min-height:40px;padding-inline:8px}
+.action-button-icon{width:40px;min-width:40px;height:40px;padding-inline:0}
+.action-group{white-space:nowrap}
+.action-group-compact .action-button{padding-inline:8px}
+.workbench-form-modal .ant-modal-content{border-radius:14px;overflow:hidden}
+.workbench-form-modal .ant-modal-body{padding-top:8px}
+.workbench-action-drawer .ant-drawer-content{border-radius:14px 0 0 14px;overflow:hidden}
+.workbench-action-drawer .ant-drawer-body{padding:20px}
+.component-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.component-catalog-section{min-width:0}
+.component-catalog-demo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:20px}
+.component-catalog-rule{margin:0;padding:0 20px 18px;color:var(--muted);font-size:12px;line-height:1.65}
+.component-catalog-stack{display:flex;flex-direction:column;gap:12px;padding:20px}
+@media(max-width:900px){.component-catalog-grid{grid-template-columns:1fr}}
+.lightweight-trend-chart{position:relative;width:100%;min-width:0}
+.lightweight-trend-chart svg{display:block;width:100%;height:232px;overflow:visible;touch-action:pan-y}
+.trend-grid-line{stroke:#e8eceb;stroke-width:1;stroke-dasharray:3 4}
+.trend-axis-label{fill:#8b9592;font-size:11px;font-family:inherit}
+.trend-series-line{fill:none;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.trend-active-line{stroke:#9aa5a2;stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
+.dashboard-chart-tooltip{position:absolute;z-index:2;top:4px;right:8px;display:grid;grid-template-columns:auto auto;gap:5px 14px;min-width:142px;padding:9px 11px;border:1px solid #dfe6e4;border-radius:10px;background:rgb(255 255 255 / 94%);box-shadow:0 7px 20px rgb(29 49 45 / 12%);font-size:12px;pointer-events:none;backdrop-filter:blur(6px)}
+.dashboard-chart-tooltip strong{grid-column:1/-1;color:#52605d;font-weight:600}.dashboard-chart-tooltip span{display:contents}.dashboard-chart-tooltip i{align-self:center;width:7px;height:7px;border-radius:50%}.dashboard-chart-tooltip b{justify-self:end;color:#18211f;font-variant-numeric:tabular-nums}

@@ -5,25 +5,44 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
+    "worker": "tsx scripts/worker.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:admin": "tsx scripts/create-admin.ts",
+    "db:seed": "tsx scripts/seed-demo.ts",
+    "db:weapons": "tsx scripts/sync-weapon-catalog.ts",
+    "db:reparse": "tsx scripts/reparse-sources.ts",
+    "db:backfill": "tsx scripts/backfill-descriptions.ts",
     "start": "react-router-serve ./build/server/index.js",
+    "test": "vitest run",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
+    "@ant-design/pro-components": "3.1.14-7",
     "@react-router/node": "^8",
     "@react-router/serve": "^8",
+    "antd": "^6.6.2",
+    "argon2": "^0.45.1",
+    "croner": "^10.0.1",
+    "dotenv": "^17.4.2",
     "isbot": "^5.1.36",
+    "pg": "^8.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router": "^8"
+    "react-router": "^8",
+    "tsx": "^4.23.13",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@react-router/dev": "^8",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "vitest": "^4.1.11"
   }
 }

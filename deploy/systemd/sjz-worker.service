@@ -1,0 +1,24 @@
+[Unit]
+Description=SJZ crawl worker
+After=network-online.target docker.service sjz-web.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sjz
+Group=sjz
+WorkingDirectory=/opt/sjz/current
+EnvironmentFile=/opt/sjz/shared/app.env
+Environment=NODE_OPTIONS=--max-old-space-size=384
+ExecStart=/usr/bin/npm run worker
+Restart=on-failure
+RestartSec=8
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/sjz
+
+[Install]
+WantedBy=multi-user.target
