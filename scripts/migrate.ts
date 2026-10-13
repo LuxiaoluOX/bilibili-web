@@ -37,11 +37,16 @@ try {
   );
   const applied = await client.query<{ filename: string }>(`select filename from "${schema}".schema_migrations`);
   const appliedFiles = new Set(applied.rows.map((row) => row.filename));
+  const loginRateLimits = await client.query<{ exists: boolean }>(
+    "select to_regclass(format('%I.login_rate_limits', $1::text)) is not null exists", [schema],
+  );
+  if (!loginRateLimits.rows[0]?.exists) appliedFiles.delete("013_login_rate_limits.sql");
 
   // Releases before the ledger repeatedly ran migrations 001-013. Register
   // only that known legacy set, leaving newer files to execute normally.
   if (existingSchema.rows[0]?.exists && appliedFiles.size === 0) {
-    const legacyFiles = files.filter((file) => file <= "013_login_rate_limits.sql");
+    const legacyFiles = files.filter((file) => file <= "013_login_rate_limits.sql"
+      && (file !== "013_login_rate_limits.sql" || loginRateLimits.rows[0]?.exists));
     if (legacyFiles.length) {
       await client.query(
         `insert into "${schema}".schema_migrations(filename) select unnest($1::text[]) on conflict do nothing`,
@@ -58,7 +63,10 @@ try {
     await client.query("begin");
     try {
       await client.query(await readFile(resolve(migrationsDir, file), "utf8"));
-      await client.query(`insert into "${schema}".schema_migrations(filename) values($1)`, [file]);
+      await client.query(
+        `insert into "${schema}".schema_migrations(filename) values($1)
+         on conflict(filename) do update set applied_at=now()`, [file],
+      );
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");
