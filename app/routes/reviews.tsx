@@ -159,11 +159,10 @@ export default function Reviews({ loaderData }: Route.ComponentProps) {
 
   return <div className="page redesigned-settings-page operations-page review-queue-page">
     <OperationsHeader title="数据审核" description="核对来源与归属，确认后入库。" />
-    <OperationsSummary icon={<SafetyCertificateOutlined />} title="待审核候选" status={<StatusBadge status={loaderData.queue.total ? "warning" : "success"} label={loaderData.queue.total ? `${loaderData.queue.total} 条待审核` : "当前范围暂无待审核"} />}>
-      <span>当前筛选：{loaderData.queue.total} 条</span><span>本页待确认武器：{unresolved} 条</span><span>{editable ? "可审核 · 批量操作仅处理所选记录" : "只读访问"}</span>
+    <OperationsSummary icon={<SafetyCertificateOutlined />} status={<StatusBadge status={loaderData.queue.total ? "warning" : "success"} label={loaderData.queue.total ? `${loaderData.queue.total} 条待审核` : "当前范围暂无待审核"} />}>
+      <span>第 {loaderData.queue.page} 页 · 当前筛选：{loaderData.queue.total} 条</span><span>本页待确认武器：{unresolved} 条</span><span>{editable ? "可审核 · 批量操作仅处理所选记录" : "只读访问"}</span>
     </OperationsSummary>
     <section className="operations-workspace" aria-label="审核工作区">
-    <div className="operations-section-heading"><div><h2>审核队列</h2><p>先筛选候选，再逐条或批量处理。</p></div><Typography.Text type="secondary">第 {loaderData.queue.page} 页</Typography.Text></div>
     {unresolved ? <Alert className="settings-alert" type="warning" showIcon title={`当前页有 ${unresolved} 条候选尚未确认武器`} description={<>这类记录不能批量通过，请先完成武器确认或别名映射。<Link to="/builds?gameMode=unknown" prefetch="intent">前往模式治理</Link></>} /> : null}
     <DataToolbar main={<Form method="get" className="review-filter-form"><label className="operations-search-field"><span>搜索候选</span><Input name="q" defaultValue={loaderData.filters.search} prefix={<SearchOutlined />} placeholder="视频、博主、武器或改枪码" allowClear/></label><label><span>行动模式</span><select name="gameMode" defaultValue={loaderData.filters.gameMode} className="native-select">{[{ value: "", label: "全部模式" }, ...GAME_MODE_OPTIONS].map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><label><span>武器归属</span><select name="attribution" defaultValue={loaderData.filters.attribution} className="native-select">{attributionOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><label><span>可信度</span><select name="confidence" defaultValue={loaderData.filters.confidence} className="native-select">{confidenceOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><ActionButton kind="secondary" htmlType="submit">筛选</ActionButton></Form>} />
     <section className="table-section">

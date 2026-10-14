@@ -12,7 +12,7 @@ import type { ColumnsType } from "antd/es/table";
 import { data, useFetcher } from "react-router";
 import type { Route } from "./+types/season-sync";
 import { ActionButton, ConfirmAction } from "../components/actions";
-import { CountTag, StatusBadge, tablePagination, WorkbenchProTable } from "../components/data-display";
+import { StatusBadge, tablePagination, WorkbenchProTable } from "../components/data-display";
 import { useFetcherToast } from "../components/feedback";
 import { WorkbenchPanel } from "../components/layout";
 import { OperationsHeader, OperationsSummary } from "../components/layout/operations";
@@ -132,19 +132,19 @@ export default function SeasonSync({ loaderData }: Route.ComponentProps) {
       { key: "history", label: "历史记录", count: loaderData.runs.length, icon: <HistoryOutlined /> },
     ].map((item) => <button key={item.key} type="button" aria-pressed={section === item.key} aria-controls={`season-${item.key}`} className={section === item.key ? "is-active" : ""} onClick={() => setSection(item.key)}>{item.icon}{item.label}<span>{item.count}</span></button>)}</nav>
     <section id="season-pending" hidden={section !== "pending"} className="operations-tab-panel" aria-label="待确认变更">
-    <WorkbenchPanel className="season-sync-section" title={<Space><FileSearchOutlined />待确认变更</Space>} description="核对赛季名称、开始时间、新武器与原始公告后再确认。" extra={<CountTag tone={pending.length ? "amber" : "green"}>{pending.length} 项待处理</CountTag>}>
+    <WorkbenchPanel className="season-sync-section">
       {pending.length ? <WorkbenchProTable preferenceKey="season-sync-pending" rowKey="id" columns={candidateColumns} dataSource={pending} scroll={{ x: 1300 }} pagination={false} /> : <div className="season-sync-empty"><CheckCircleOutlined /><span>没有待确认变更</span><small>后台仍会按计划继续检查官方公告</small></div>}
     </WorkbenchPanel>
 
     <details className="operations-details"><summary>发布流程与影响范围</summary><p>核对公告 → 确认发布 → 写入赛季与武器目录 → 重解析该赛季以来的来源。不会自动覆盖已有赛季日期，也不会自动删除或合并武器。</p></details>
     </section>
     <section id="season-sources" hidden={section !== "sources"} className="operations-tab-panel" aria-label="来源证据">
-    <WorkbenchPanel className="season-sync-section" title={<Space><LinkOutlined />来源证据</Space>} description="查看官方公告、发布时间与内容指纹。">
+    <WorkbenchPanel className="season-sync-section">
       <WorkbenchProTable preferenceKey="season-sync-sources" rowKey="id" columns={sourceColumns} dataSource={loaderData.sources} scroll={{ x: 1090 }} pagination={tablePagination(8, "条证据")} />
     </WorkbenchPanel>
     </section>
     <section id="season-history" hidden={section !== "history"} className="operations-tab-panel" aria-label="历史记录">
-    <WorkbenchPanel className="season-sync-section" title={<Space><HistoryOutlined />历史记录</Space>} description="记录手动和后台检查、发布结果与失败原因。">
+    <WorkbenchPanel className="season-sync-section">
       <WorkbenchProTable preferenceKey="season-sync-history" rowKey="id" columns={runColumns} dataSource={loaderData.runs} scroll={{ x: 1150 }} pagination={tablePagination(12, "条任务")} />
     </WorkbenchPanel>
     </section>
