@@ -1,11 +1,12 @@
 import { ClockCircleOutlined, DatabaseOutlined, KeyOutlined, RightOutlined, RobotOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
-import { Alert, Empty, Progress, Segmented, Space, Typography } from "antd";
+import { Empty, Progress, Segmented, Space, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/quality";
 import { ActionButton } from "../components/actions/action-button";
 import { StatusBadge, tablePagination, WorkbenchProTable } from "../components/data-display";
-import { MetricGrid, PageHeader, TaskInbox, WorkbenchPanel } from "../components/layout";
+import { MetricGrid, TaskInbox, WorkbenchPanel } from "../components/layout";
+import { OperationsHeader, OperationsSummary } from "../components/layout/operations";
 import { requireUser } from "../lib/auth.server";
 import { getDataQualityDashboard } from "../lib/data-quality.server";
 import { normalizeQualityPeriod, qualityRateLabel, type QualityPeriodDays } from "../lib/data-quality";
@@ -60,9 +61,15 @@ export default function QualityCenter({ loaderData }: Route.ComponentProps) {
     { title: "未更新天数", dataIndex: "daysWithoutSource", width: 130, align: "right", render: (value: number | null) => value === null ? "未知" : `${value} 天` },
   ];
 
-  return <div className="page quality-page">
-    <PageHeader eyebrow="DATA QUALITY / ALERTS" title="数据质量与告警中心" description="用一致口径监控抓取、解析、自动入库与来源新鲜度；异常只指向现有治理入口。" actions={<Segmented<QualityPeriodDays> aria-label="选择质量指标观察周期" value={loaderData.periodDays} options={[{ label: "近 30 天", value: 30 }, { label: "近 90 天", value: 90 }]} onChange={(value) => void navigate(`/quality?period=${value}`)} />} />
-    <div className={`system-status-bar quality-status quality-status-${overallStatus}`}><StatusBadge status={overallStatus} label={overallStatus === "success" ? "数据链路正常" : overallStatus === "warning" ? "存在质量提醒" : "存在运行异常"} /><span>统计周期：近 {loaderData.periodDays} 天</span><span className="status-detail">最近观测：{formatDate(loaderData.latestObservedAt)} · 生成于 {capturedAt}</span></div>
+  return <div className="page redesigned-settings-page operations-page quality-page">
+    <OperationsHeader title="数据质量" description="查看链路健康，优先处理当前异常。" actions={<Segmented<QualityPeriodDays> aria-label="选择质量指标观察周期" value={loaderData.periodDays} options={[{ label: "近 30 天", value: 30 }, { label: "近 90 天", value: 90 }]} onChange={(value) => void navigate(`/quality?period=${value}`)} />} />
+    <OperationsSummary icon={<SafetyCertificateOutlined />} title="数据链路" status={<StatusBadge status={overallStatus} label={overallStatus === "success" ? "正常" : overallStatus === "warning" ? "存在质量提醒" : "存在运行异常"} />}>
+      <span>{alerts.length} 项告警或提醒</span><span>最近观测：{formatDate(loaderData.latestObservedAt)}</span><span>生成于 {capturedAt}</span>
+    </OperationsSummary>
+    <nav className="operations-section-links" aria-label="质量分区"><a href="#quality-alerts">当前告警 <span>{alerts.length}</span></a><a href="#quality-metrics">质量指标</a><a href="#stale-builds">来源新鲜度 <span>{loaderData.staleBuilds.length}</span></a></nav>
+    <section id="quality-alerts" className="operations-anchor" aria-label="当前告警"><WorkbenchPanel className="quality-alert-panel" title={<Space><SafetyCertificateOutlined />当前告警</Space>} description={`${alerts.length} 项需要关注`}><TaskInbox items={alerts} emptyText="当前没有需要处理的告警" /></WorkbenchPanel></section>
+    <section id="quality-metrics" className="operations-anchor operations-metrics-section" aria-label="质量指标">
+    <div className="operations-section-heading"><div><h2>质量指标</h2><p>统计近 {loaderData.periodDays} 天；运行状态与未知模式按当前全库统计。</p></div></div>
     <MetricGrid items={[
       { key: "crawl", label: "抓取成功率", value: qualityRateLabel(loaderData.crawl.rate), hint: `完整成功 ${loaderData.crawl.successfulRuns} / 已结束 ${loaderData.crawl.finishedRuns}；部分成功 ${loaderData.crawl.partialRuns}`, status: rateStatus(loaderData.crawl.rate, 80) },
       { key: "parse", label: "解析率", value: qualityRateLabel(loaderData.parsing.rate), hint: `产出候选的来源 ${loaderData.parsing.parsedSources} / 新增来源 ${loaderData.parsing.sources}`, status: rateStatus(loaderData.parsing.rate, 60) },
@@ -71,12 +78,12 @@ export default function QualityCenter({ loaderData }: Route.ComponentProps) {
       { key: "stale", label: "长期未更新方案", value: loaderData.staleBuilds.length, hint: `超过 ${loaderData.staleBuildDays} 天无新来源`, status: loaderData.staleBuilds.length ? "warning" : "success" },
       { key: "runtime", label: "运行保障", value: hasDanger ? "异常" : "正常", hint: `Worker ${workerLabel} · B 站会话 ${credentialHealthy ? "有效" : "异常"}`, status: hasDanger ? "danger" : "success" },
     ]} />
-    <Alert className="quality-definition-alert" type="info" showIcon title="指标口径" description="抓取成功率只把完整成功计入分子；解析率按新增来源是否产出候选计算；自动入库率只统计无需人工审核即接受的可处理候选。分母为 0 时显示“暂无数据”，不会伪装成 0%。" />
+    <details className="operations-details"><summary>查看指标口径</summary><p>抓取成功率仅计完整成功；解析率按新增来源是否产出候选计算；自动入库率仅计无需人工审核即接受的可处理候选。分母为 0 时显示“暂无数据”。</p></details>
     <div className="quality-grid">
       <WorkbenchPanel title="质量漏斗" description={`近 ${loaderData.periodDays} 天的分子、分母与例外`}><div className="quality-rate-list"><RateRow label="抓取成功率" rate={loaderData.crawl.rate} detail={`完整成功 ${loaderData.crawl.successfulRuns}，部分成功 ${loaderData.crawl.partialRuns}，失败 ${loaderData.crawl.failedRuns}`} /><RateRow label="解析率" rate={loaderData.parsing.rate} detail={`${loaderData.parsing.parsedSources} 个来源产出候选，共新增 ${loaderData.parsing.sources} 个来源`} /><RateRow label="自动入库率" rate={loaderData.autoIngest.rate} detail={`${loaderData.autoIngest.autoIngestedCandidates} 条自动接受，共 ${loaderData.autoIngest.actionableCandidates} 条可处理候选`} /></div></WorkbenchPanel>
       <WorkbenchPanel title="链路状态" description="当前状态，不受观察周期影响"><div className="quality-health-list"><div><RobotOutlined /><span><strong>抓取 Worker</strong><small>{workerLabel} · 卡住任务 {loaderData.worker.staleRuns}</small></span><StatusBadge status={loaderData.worker.online && !loaderData.worker.staleRuns ? "success" : "danger"} /></div><div><KeyOutlined /><span><strong>B 站会话</strong><small>{credentialHealthy ? `有效 · ${loaderData.credential.accountName ?? "账号未命名"}` : "需要配置或重新验证"}</small></span><StatusBadge status={credentialHealthy ? "success" : "danger"} /></div><div><DatabaseOutlined /><span><strong>行动模式投影</strong><small>来源、候选、版本、方案四层</small></span><StatusBadge status={loaderData.modeIntegrity.healthy ? "success" : "warning"} /></div><div><ClockCircleOutlined /><span><strong>来源新鲜度</strong><small>{loaderData.staleBuilds.length} 个方案超过 {loaderData.staleBuildDays} 天</small></span><StatusBadge status={loaderData.staleBuilds.length ? "warning" : "success"} /></div></div></WorkbenchPanel>
     </div>
-    <WorkbenchPanel className="quality-alert-panel" title={<Space><SafetyCertificateOutlined />告警队列</Space>} description={`${alerts.length} 项当前异常或提醒`}><TaskInbox items={alerts} emptyText="当前没有需要处理的数据质量告警" /></WorkbenchPanel>
+    </section>
     <section className="quality-stale-section" id="stale-builds" aria-labelledby="stale-builds-title"><div className="quality-section-heading"><div><h2 id="stale-builds-title">长期未更新方案</h2><p>按方案最后来源发布时间判断，阈值为 {loaderData.staleBuildDays} 天；仅表示需要复核来源新鲜度。</p></div><StatusBadge status={loaderData.staleBuilds.length ? "warning" : "success"} label={`${loaderData.staleBuilds.length} 个方案`} /></div>{loaderData.staleBuilds.length ? <div className="table-section"><WorkbenchProTable preferenceKey="quality-stale-builds" rowKey="id" columns={columns} dataSource={loaderData.staleBuilds} scroll={{ x: 700 }} pagination={tablePagination(10, "个方案")} /></div> : <div className="quality-empty"><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前没有长期未更新方案" /></div>}</section>
   </div>;
 }

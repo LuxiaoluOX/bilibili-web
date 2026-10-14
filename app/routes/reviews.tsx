@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined, EditOutlined, RightOutlined, SearchOutlined, VideoCameraOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, EditOutlined, RightOutlined, SafetyCertificateOutlined, SearchOutlined, VideoCameraOutlined } from "@ant-design/icons";
 import { ProFormText } from "@ant-design/pro-components";
 import { Alert, Empty, Input, Space, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -10,7 +10,7 @@ import { ActionButton, ActionGroup, ConfirmAction } from "../components/actions"
 import { CodeValue, CountTag, StatusBadge, tablePagination, WorkbenchProTable } from "../components/data-display";
 import { useFetcherToast } from "../components/feedback";
 import { DataToolbar, FormModal } from "../components/forms";
-import { PageHeader } from "../components/layout";
+import { OperationsHeader, OperationsSummary } from "../components/layout/operations";
 import { audit } from "../lib/audit.server";
 import { requireRole, requireUser } from "../lib/auth.server";
 import { acceptCandidate, acceptCandidates } from "../lib/crawler.server";
@@ -157,10 +157,15 @@ export default function Reviews({ loaderData }: Route.ComponentProps) {
     { title: "决策", fixed: "right", width: 250, align: "center", render: (_, row) => editable ? <ActionGroup compact><fetcher.Form method="post"><input type="hidden" name="candidateId" value={row.id} /><input type="hidden" name="gameMode" value={row.gameMode} />{row.weapon_name ? <ActionButton kind="link" scale="row" htmlType="submit" name="intent" value="accept" icon={<CheckOutlined />} loading={activeId === row.id && fetcher.formData?.get("intent") === "accept"}>通过</ActionButton> : null}<ActionButton kind="danger" scale="row" htmlType="submit" name="intent" value="reject" icon={<CloseOutlined />} loading={activeId === row.id && fetcher.formData?.get("intent") === "reject"}>拒绝</ActionButton></fetcher.Form><ActionButton kind="link" scale="row" icon={<EditOutlined />} onClick={() => setEditing(row)}>修正</ActionButton>{!row.weapon_name ? <ActionButton kind="link" scale="row" to="/builds?gameMode=unknown">确认武器 <RightOutlined /></ActionButton> : null}</ActionGroup> : "只读" },
   ];
 
-  return <div className="page review-queue-page">
-    <PageHeader eyebrow="REVIEW QUEUE" title="数据审核" description="筛选并处理全部待审核候选；批量操作只作用于当前明确选择的记录。" actions={<CountTag tone={loaderData.queue.total ? "amber" : "green"}>{loaderData.queue.total} 条待审核</CountTag>} />
+  return <div className="page redesigned-settings-page operations-page review-queue-page">
+    <OperationsHeader title="数据审核" description="核对来源与归属，确认后入库。" />
+    <OperationsSummary icon={<SafetyCertificateOutlined />} title="待审核候选" status={<StatusBadge status={loaderData.queue.total ? "warning" : "success"} label={loaderData.queue.total ? `${loaderData.queue.total} 条待审核` : "当前范围暂无待审核"} />}>
+      <span>当前筛选：{loaderData.queue.total} 条</span><span>本页待确认武器：{unresolved} 条</span><span>{editable ? "可审核 · 批量操作仅处理所选记录" : "只读访问"}</span>
+    </OperationsSummary>
+    <section className="operations-workspace" aria-label="审核工作区">
+    <div className="operations-section-heading"><div><h2>审核队列</h2><p>先筛选候选，再逐条或批量处理。</p></div><Typography.Text type="secondary">第 {loaderData.queue.page} 页</Typography.Text></div>
     {unresolved ? <Alert className="settings-alert" type="warning" showIcon title={`当前页有 ${unresolved} 条候选尚未确认武器`} description={<>这类记录不能批量通过，请先完成武器确认或别名映射。<Link to="/builds?gameMode=unknown" prefetch="intent">前往模式治理</Link></>} /> : null}
-    <DataToolbar main={<Form method="get" className="review-filter-form"><Input name="q" defaultValue={loaderData.filters.search} prefix={<SearchOutlined />} placeholder="搜索视频、博主、武器、方案或改枪码" allowClear/><select name="gameMode" defaultValue={loaderData.filters.gameMode} className="native-select">{[{ value: "", label: "全部模式" }, ...GAME_MODE_OPTIONS].map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select><select name="attribution" defaultValue={loaderData.filters.attribution} className="native-select">{attributionOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select><select name="confidence" defaultValue={loaderData.filters.confidence} className="native-select">{confidenceOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select><ActionButton kind="secondary" htmlType="submit">筛选</ActionButton></Form>} aside={<Typography.Text type="secondary">第 {loaderData.queue.page} 页 · 共 {loaderData.queue.total} 条</Typography.Text>} />
+    <DataToolbar main={<Form method="get" className="review-filter-form"><label className="operations-search-field"><span>搜索候选</span><Input name="q" defaultValue={loaderData.filters.search} prefix={<SearchOutlined />} placeholder="视频、博主、武器或改枪码" allowClear/></label><label><span>行动模式</span><select name="gameMode" defaultValue={loaderData.filters.gameMode} className="native-select">{[{ value: "", label: "全部模式" }, ...GAME_MODE_OPTIONS].map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><label><span>武器归属</span><select name="attribution" defaultValue={loaderData.filters.attribution} className="native-select">{attributionOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><label><span>可信度</span><select name="confidence" defaultValue={loaderData.filters.confidence} className="native-select">{confidenceOptions.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}</select></label><ActionButton kind="secondary" htmlType="submit">筛选</ActionButton></Form>} />
     <section className="table-section">
       <WorkbenchProTable
         preferenceKey="reviews"
@@ -173,6 +178,7 @@ export default function Reviews({ loaderData }: Route.ComponentProps) {
         pagination={{ ...tablePagination(loaderData.queue.pageSize, "条候选"), current: loaderData.queue.page, pageSize: loaderData.queue.pageSize, total: loaderData.queue.total, hideOnSinglePage: false, onChange: changePage }}
         locale={{ emptyText: <Empty description={loaderData.queue.total ? "当前页没有候选记录" : "没有符合筛选条件的待审核候选"} /> }}
       />
+    </section>
     </section>
     <FormModal title="修正候选信息" open={Boolean(editing)} onClose={() => setEditing(null)}>
       {editing ? <><Alert type="info" showIcon title="提交后将重新归属版本链" description={`原识别：${editing.weapon_name ?? editing.suggested_weapon ?? "未知武器"} · ${editing.build_name ?? "未命名方案"}`} /><fetcher.Form method="post" onSubmit={() => setEditing(null)}><input type="hidden" name="candidateId" value={editing.id} /><ProFormText name="weaponName" label="武器名称" initialValue={editing.weapon_name ?? editing.suggested_weapon ?? ""} /><ProFormText name="buildName" label="方案名称" initialValue={editing.build_name ?? ""} /><Typography.Text className="field-label">游戏模式</Typography.Text><select name="gameMode" defaultValue={editing.gameMode} className="native-select">{GAME_MODE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><ProFormText label="改枪码（不可修改）" fieldProps={{ value: editing.normalized_code, disabled: true }} /><ActionButton className="modal-submit" kind="primary" htmlType="submit" name="intent" value="correct" block loading={fetcher.state !== "idle"}>修正并入库</ActionButton></fetcher.Form></> : null}

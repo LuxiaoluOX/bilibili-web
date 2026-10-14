@@ -6,14 +6,16 @@ import {
   LinkOutlined,
   RocketOutlined,
 } from "@ant-design/icons";
-import { Alert, Descriptions, Space, Tag, Typography } from "antd";
+import { Space, Tag, Typography } from "antd";
+import { useState } from "react";
 import type { ColumnsType } from "antd/es/table";
 import { data, useFetcher } from "react-router";
 import type { Route } from "./+types/season-sync";
 import { ActionButton, ConfirmAction } from "../components/actions";
 import { CountTag, StatusBadge, tablePagination, WorkbenchProTable } from "../components/data-display";
 import { useFetcherToast } from "../components/feedback";
-import { MetricGrid, PageHeader, WorkbenchPanel } from "../components/layout";
+import { WorkbenchPanel } from "../components/layout";
+import { OperationsHeader, OperationsSummary } from "../components/layout/operations";
 import { requireRole } from "../lib/auth.server";
 import {
   checkSeasonUpdates,
@@ -78,6 +80,7 @@ const runStatus = {
 
 export default function SeasonSync({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
+  const [section, setSection] = useState("pending");
   useFetcherToast(fetcher, { loading: "正在处理赛季同步…" });
   const busyIntent = fetcher.formData ? String(fetcher.formData.get("intent")) : null;
   const busyId = fetcher.formData ? String(fetcher.formData.get("candidateId") ?? "") : null;
@@ -116,48 +119,34 @@ export default function SeasonSync({ loaderData }: Route.ComponentProps) {
     { title: "结果", dataIndex: "errorMessage", width: 300, ellipsis: true, render: (value, row) => value ? <Typography.Text type="danger">{value}</Typography.Text> : row.status === "no_changes" ? "当前目录已是最新" : "已完成" },
   ];
 
-  return <div className="page season-sync-page">
-    <PageHeader eyebrow="SEASON OPERATIONS" title="赛季同步" description="定期核验官方赛季公告，将新赛季与新武器整理为待确认变更；只有管理员确认后才会发布到生产目录。" actions={<ActionButton kind="primary" icon={<CloudSyncOutlined />} loading={busyIntent === "check-now"} disabled={fetcher.state !== "idle"} onClick={() => fetcher.submit({ intent: "check-now" }, { method: "post" })}>立即检查</ActionButton>} />
-    <MetricGrid items={[
-      { key: "season", label: "当前赛季", value: loaderData.currentSeason?.code ?? "—", hint: loaderData.currentSeason?.name ?? "尚未配置", status: "success" },
-      { key: "pending", label: "待确认变更", value: pending.length, hint: pending.length ? "检查证据后确认发布" : "目录已对齐", status: pending.length ? "warning" : "success" },
-      { key: "sources", label: "来源证据", value: loaderData.sources.length, hint: "已留存官方公告指纹" },
-      { key: "published", label: "已发布同步", value: published.length, hint: "通过本页面完成" },
-      { key: "interval", label: "自动检查", value: `${loaderData.source.intervalHours}h`, hint: "后台只检查，不自动发布", status: "info" },
-      { key: "runs", label: "历史任务", value: loaderData.runs.length, hint: lastRun ? dateTime(lastRun.startedAt) : "尚未运行" },
-    ]} />
-
-    <WorkbenchPanel className="season-sync-section" title={<Space><CloudSyncOutlined />立即检查</Space>} description="读取官方公告并生成差异，不直接修改赛季和武器数据。" extra={<StatusBadge status={lastRun?.status === "failed" ? "danger" : "success"} label={lastRun ? `上次：${runStatus[lastRun.status as keyof typeof runStatus]?.label ?? lastRun.status}` : "等待首次检查"} />}>
-      <div className="season-sync-section-body season-check-body">
-        <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 4 }} items={[
-          { key: "source", label: "数据源", children: loaderData.source.name },
-          { key: "policy", label: "发布策略", children: "人工确认后发布" },
-          { key: "schedule", label: "后台频率", children: `每 ${loaderData.source.intervalHours} 小时检查` },
-          { key: "last", label: "最近检查", children: lastRun ? dateTime(lastRun.startedAt) : "—" },
-        ]} />
-        <Alert type="info" showIcon message="安全边界" description="检查任务只保存公告、证据指纹和候选差异；不会自动覆盖已有赛季日期，也不会自动删除或合并武器。" />
-      </div>
-    </WorkbenchPanel>
-
+  return <div className="page redesigned-settings-page operations-page season-sync-page">
+    <OperationsHeader title="赛季同步" description="核对官方变更，人工确认后发布。" />
+    <OperationsSummary icon={<CloudSyncOutlined />} title={<>当前赛季 {loaderData.currentSeason?.code ?? "—"} · {loaderData.currentSeason?.name ?? "尚未配置"}</>} status={<StatusBadge status={lastRun ? runStatus[lastRun.status as keyof typeof runStatus]?.status ?? "neutral" : "neutral"} label={lastRun ? `上次：${runStatus[lastRun.status as keyof typeof runStatus]?.label ?? lastRun.status}` : "尚未检查"} />} actions={<ActionButton kind="primary" icon={<CloudSyncOutlined />} loading={busyIntent === "check-now"} disabled={fetcher.state !== "idle"} onClick={() => fetcher.submit({ intent: "check-now" }, { method: "post" })}>立即检查</ActionButton>}>
+      <span>{loaderData.source.name}</span><span>每 {loaderData.source.intervalHours} 小时自动检查</span><span>最近执行：{lastRun ? dateTime(lastRun.startedAt) : "尚未运行"}</span>
+    </OperationsSummary>
+    <div className="operations-inline-stats"><span>待确认 <strong>{pending.length}</strong></span><span>来源证据 <strong>{loaderData.sources.length}</strong></span><span>已发布 <strong>{published.length}</strong></span><span>历史任务 <strong>{loaderData.runs.length}</strong></span></div>
+    <p className="operations-policy-note">检查只生成待确认变更，不自动发布或覆盖现有目录。</p>
+    <nav className="operations-tabs" aria-label="赛季同步分区">{[
+      { key: "pending", label: "待确认变更", count: pending.length, icon: <FileSearchOutlined /> },
+      { key: "sources", label: "来源证据", count: loaderData.sources.length, icon: <LinkOutlined /> },
+      { key: "history", label: "历史记录", count: loaderData.runs.length, icon: <HistoryOutlined /> },
+    ].map((item) => <button key={item.key} type="button" aria-pressed={section === item.key} aria-controls={`season-${item.key}`} className={section === item.key ? "is-active" : ""} onClick={() => setSection(item.key)}>{item.icon}{item.label}<span>{item.count}</span></button>)}</nav>
+    <section id="season-pending" hidden={section !== "pending"} className="operations-tab-panel" aria-label="待确认变更">
     <WorkbenchPanel className="season-sync-section" title={<Space><FileSearchOutlined />待确认变更</Space>} description="核对赛季名称、开始时间、新武器与原始公告后再确认。" extra={<CountTag tone={pending.length ? "amber" : "green"}>{pending.length} 项待处理</CountTag>}>
       {pending.length ? <WorkbenchProTable preferenceKey="season-sync-pending" rowKey="id" columns={candidateColumns} dataSource={pending} scroll={{ x: 1300 }} pagination={false} /> : <div className="season-sync-empty"><CheckCircleOutlined /><span>没有待确认变更</span><small>后台仍会按计划继续检查官方公告</small></div>}
     </WorkbenchPanel>
 
-    <WorkbenchPanel className="season-sync-section" title={<Space><LinkOutlined />来源证据</Space>} description="保留官方公告链接、发布时间与内容指纹，便于确认和追溯。">
+    <details className="operations-details"><summary>发布流程与影响范围</summary><p>核对公告 → 确认发布 → 写入赛季与武器目录 → 重解析该赛季以来的来源。不会自动覆盖已有赛季日期，也不会自动删除或合并武器。</p></details>
+    </section>
+    <section id="season-sources" hidden={section !== "sources"} className="operations-tab-panel" aria-label="来源证据">
+    <WorkbenchPanel className="season-sync-section" title={<Space><LinkOutlined />来源证据</Space>} description="查看官方公告、发布时间与内容指纹。">
       <WorkbenchProTable preferenceKey="season-sync-sources" rowKey="id" columns={sourceColumns} dataSource={loaderData.sources} scroll={{ x: 1090 }} pagination={tablePagination(8, "条证据")} />
     </WorkbenchPanel>
-
-    <WorkbenchPanel className="season-sync-section" title={<Space><RocketOutlined />发布同步</Space>} description="确认后以事务写入赛季和武器目录，并触发该赛季以来的来源重解析。" extra={<StatusBadge status={pending.length ? "warning" : "success"} label={pending.length ? "等待管理员确认" : "生产目录已同步"} />}>
-      <div className="season-sync-section-body season-publish-flow">
-        <div><b>1. 差异校验</b><span>比对现有赛季编号、武器标准名和别名</span></div>
-        <div><b>2. 人工确认</b><span>检查来源证据后点击“确认发布”</span></div>
-        <div><b>3. 原子发布</b><span>同一事务写入赛季、武器与审计记录</span></div>
-        <div><b>4. 历史对账</b><span>重解析新赛季以来捕获的视频简介</span></div>
-      </div>
-    </WorkbenchPanel>
-
+    </section>
+    <section id="season-history" hidden={section !== "history"} className="operations-tab-panel" aria-label="历史记录">
     <WorkbenchPanel className="season-sync-section" title={<Space><HistoryOutlined />历史记录</Space>} description="记录手动和后台检查、发布结果与失败原因。">
       <WorkbenchProTable preferenceKey="season-sync-history" rowKey="id" columns={runColumns} dataSource={loaderData.runs} scroll={{ x: 1150 }} pagination={tablePagination(12, "条任务")} />
     </WorkbenchPanel>
+    </section>
   </div>;
 }

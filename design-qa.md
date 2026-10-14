@@ -1,3 +1,43 @@
+# Design QA — 审核、质量、赛季的视觉统一（2026-10-14）
+
+## Comparison target and evidence
+
+- Visual truth: `/Users/yanjianghua/WebstormProjects/bilibili-web-crawler/artifacts/session-settings-fusion/settings-frequency-desktop.png`, the approved and deployed fusion language, captured at 1440 × 1024 CSS/pixel dimensions.
+- This is a design-language extension, not a pixel clone of the settings workflow. Full-width review tables, quality diagnostics and season tabs intentionally replace the settings page's left category rail.
+- Final desktop evidence at 1440 × 1024: [审核](artifacts/operations-fusion/reviews-desktop-final.png), [质量](artifacts/operations-fusion/quality-desktop-final.png), [赛季](artifacts/operations-fusion/season-desktop-final.png).
+- Mobile viewport 390 × 844: [审核](artifacts/operations-fusion/reviews-mobile.png), [质量](artifacts/operations-fusion/quality-mobile.png), [质量指标](artifacts/operations-fusion/quality-metrics-mobile.png), [修正后赛季](artifacts/operations-fusion/season-mobile-final.png). Full-page captures have variable height; viewport captures are 390 × 844. Medium viewport 900 × 1024: [审核](artifacts/operations-fusion/reviews-medium.png), [质量](artifacts/operations-fusion/quality-medium.png).
+- State: authenticated local administrator; review and season candidates are empty; quality has real historical observations and stale-source rows. Local Worker is offline; this is displayed as an alert, not hidden or fabricated as healthy.
+- Compared the visual truth and all three final desktop captures in one tool input. No density resampling was required (1 screenshot pixel per CSS pixel). Mobile evidence was assessed separately for responsiveness, not as desktop pixel fidelity.
+- Focused evidence: [质量指标](artifacts/operations-fusion/quality-metrics-desktop.png), [来源明细](artifacts/operations-fusion/quality-stale-desktop.png), and mobile season header comparison before/after below. These make dense table and small-screen wrapping checks readable.
+
+## Required fidelity surfaces
+
+- Fonts/typography: same system/CJK family, 32 px desktop page heading, 28 px mobile heading and 24 px section hierarchy. Added readable filter labels; corrected narrow card-title wrapping.
+- Spacing/layout: shared 40 px desktop/16 px mobile page gutters, tinted status strip, flat 4 px surfaces, divider rhythm and consistent action placement. Review retains full-width table space; quality places alerts before diagnosis; season keeps one visible workspace at a time.
+- Colors/tokens: white canvas, #f3f7f7 summary/workspace surfaces and solid teal primary actions follow the source. Existing warning/danger/success indicators remain functional and distinguish actual states.
+- Image quality/assets: supplied app logo and existing Ant Design icon library retained; no generated imagery, custom SVG artwork or rasterized controls added. Existing library empty-state illustrations remain intentional product states.
+- Copy/content: shortened page descriptions; retained scope and confirmation boundaries. Metric definitions and publishing impact are available on demand rather than oversized explanation banners. Filtered-zero candidates say “当前范围暂无待审核”, not that all records were processed.
+
+## Findings and comparison history
+
+1. [P2, fixed] On the first 390 px season capture, the title shrank to vertical characters beside its description. Evidence: [before](artifacts/operations-fusion/season-mobile.png). Changed the scoped ProCard title/description layout to stacked lines, kept title from shrinking and allowed descriptions to wrap. Rechecked at identical width: [after](artifacts/operations-fusion/season-mobile-final.png). No remaining title collision or page overflow.
+2. Final full-view comparison found no actionable P0/P1/P2 drift within this extension's scope. Retained global navigation and its existing pale mobile brand text are outside this three-route change.
+
+## Interaction and verification
+
+- Review mode filter submits to the existing GET loader; empty-selection batch controls remain disabled. No review decisions were submitted and no candidate rows were fabricated for testing.
+- Season pending/source/history controls switch the existing table panels; publication and rejection callbacks are unchanged. No official-source check, publish or reject action was submitted.
+- Quality section anchors, expandable definitions and the 30/90-day period switch work. Zero denominators still show “暂无数据”. Existing governance links are retained.
+- All three routes checked at 1440, 900 and 390 px. Document scroll width stays equal to viewport width on checked medium/mobile layouts; wide tables scroll internally.
+- Browser log inspection found an earlier pre-redesign deprecated Alert prop warning and a development HMR error; page reload recovered it, and no new errors appeared during final interactions. No claim is made about a new end-to-end production mutation test.
+- Typecheck, 122 tests, build and diff whitespace checks passed. Loaders, server actions, permissions, task policies and database writes are unchanged.
+
+Implementation checklist: complete for these three routes. No new route, backend behavior or deployment included.
+
+final result: passed
+
+---
+
 # Design QA — 会话与系统设置融合版（2026-10-14）
 
 ## Source and evidence
