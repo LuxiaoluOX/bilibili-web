@@ -1,3 +1,43 @@
+# Design QA — 会话与系统设置融合版（2026-10-14）
+
+## Source and evidence
+
+- Selected source: `/Users/yanjianghua/.codex/generated_images/01a12504-3099-7350-9893-28368706347f/exec-113a7a23-0cd5-4846-8eb6-fe36dc697fc4.png` (1487 × 1058).
+- Desktop captures, 1440 × 1024: [会话](artifacts/session-settings-fusion/session-desktop.png), [设置](artifacts/session-settings-fusion/settings-desktop.png).
+- Full-page mobile captures, viewport 390 × 844: [会话](artifacts/session-settings-fusion/session-mobile.png), [设置](artifacts/session-settings-fusion/settings-mobile.png).
+- Medium capture, viewport 900 × 1024: [会话](artifacts/session-settings-fusion/session-medium.png).
+- Source and desktop implementation images were inspected together in one comparison input. This was not a pixel overlay or a composited side-by-side image.
+
+## Five-surface review
+
+- Visual fidelity: reproduced the selected fusion's white canvas, tinted summary strip, left selector/right workspace, and QR generation button inside the QR stage. Kept the existing application navigation rather than replacing the global shell with the mock's slim sidebar. Real account data replaces fictional reference data.
+- Product clarity: account status precedes connection actions; settings separates schedule, rules and account connection. Descriptions remain short. The QR icon is a pre-generation empty state, not a scannable code.
+- Interaction: verified all three connection methods and all three settings categories. Hidden panels remain mounted, preserving form state. No login, credential save, schedule save or external QR request was submitted during this visual check.
+- Responsive layout: both routes have no document horizontal overflow at 390 and 900 px. At 900 px QR instructions stack below the QR stage; at 390 px navigation and workspace become one column. The existing mobile shell's pale brand text is outside this two-route redesign and remains unchanged.
+- Accessibility: native buttons expose pressed state and controlled section IDs; headings, form labels and existing visible focus styles are retained. No decorative raster asset was added.
+
+## Iterations and validation
+
+1. Desktop comparison found inherited gradient/shadow styling on primary actions; scoped solid-color overrides were added and the page recaptured.
+2. Mobile inspection found direction-dependent “左侧” instructions; removed the positional wording for stacked layouts.
+3. Rechecked desktop, medium and mobile layouts and section switches. Browser console reported no errors.
+
+- `npm run typecheck`: passed.
+- `npm test`: 119 tests passed.
+- `npm run build`: passed.
+- Loader/action logic and local-only credential restrictions are unchanged. These checks do not certify a new end-to-end Bilibili authentication attempt.
+
+Result: **passed for the scoped two-route design implementation**, with the documented preserved global-shell differences. Not committed or deployed in this turn.
+
+### Follow-up: user-readable schedule controls
+
+- Replaced the default Cron field with hourly/3-hour/6-hour/12-hour/daily choices and exact Beijing-time execution descriptions. The current-plan summary now uses readable labels.
+- Advanced mode retains the original expression; unknown expressions are not silently converted. The existing server action, permissions and scheduler remain unchanged.
+- Checked advanced-mode switching and frequency selection without saving a different schedule. Desktop and 390 px mobile screenshots: [desktop](artifacts/session-settings-fusion/settings-frequency-desktop.png), [mobile](artifacts/session-settings-fusion/settings-frequency-mobile.png). Mobile document width remains 390 px.
+- Typecheck, build and 122 tests passed. Three new tests cover default-plan preservation, valid preset expressions and custom-plan detection.
+
+---
+
 # Design QA — 数据情报工作台前端重构
 
 ## Evidence

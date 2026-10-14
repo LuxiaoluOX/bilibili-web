@@ -1,11 +1,11 @@
-import { KeyOutlined, LockOutlined, QrcodeOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
-import { Alert, Input, QRCode, Space, Tabs, Typography } from "antd";
+import { KeyOutlined, LockOutlined, QrcodeOutlined, RightOutlined, SafetyCertificateOutlined, UserOutlined } from "@ant-design/icons";
+import { Alert, Avatar, Input, QRCode } from "antd";
+import { useState } from "react";
 import { data, useFetcher } from "react-router";
 import type { Route } from "./+types/bilibili-session";
 import { ActionButton } from "../components/actions";
 import { StatusBadge } from "../components/data-display";
 import { useFetcherToast } from "../components/feedback";
-import { PageHeader } from "../components/layout";
 import { audit } from "../lib/audit.server";
 import {
   BilibiliLoginError,
@@ -141,75 +141,86 @@ export default function BilibiliSession({ loaderData }: Route.ComponentProps) {
     return fetcher.data.ok ? null : <Alert className="session-notice" type="error" showIcon title={fetcher.data.message} />;
   };
 
-  return <div className="page session-page preferences-page">
-    <PageHeader eyebrow="ACCOUNT CONNECTION" title="B站会话" description="连接账号，为视频简介抓取提供有效会话。" />
-    <div className="preferences-layout session-connection-layout">
-      <section className="preferences-panel session-connect-panel">
-        <div className="preferences-panel-heading">
-          <span className="preferences-icon"><QrcodeOutlined /></span>
-          <div><h2>连接 B 站账号</h2><p>选择一种方式获取或更新会话。</p></div>
+  const [method, setMethod] = useState("qr");
+  const methods = [
+    { key: "qr", title: "扫码登录", description: "使用 B 站 App 扫码获取会话", icon: <QrcodeOutlined />, badge: "推荐" },
+    { key: "password", title: "账号密码", description: "一次性验证账号与密码", icon: <LockOutlined />, badge: "仅本机" },
+    { key: "cookie", title: "手动 Cookie", description: "导入已有的账号会话", icon: <KeyOutlined />, badge: "仅本机" },
+  ];
+  const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }) : "—";
+
+  return <div className="page redesigned-settings-page">
+    <header className="settings-title"><h1>B站会话</h1><p>连接账号，为视频简介抓取提供有效会话。</p></header>
+    <section className="connection-summary" aria-label="当前连接">
+      <Avatar size={56} icon={<UserOutlined />} />
+      <div className="connection-summary-account">
+        <div className="connection-summary-name"><strong>{status.accountName ?? "尚未连接账号"}</strong><StatusBadge status={status.status === "valid" ? "success" : "warning"} label={status.status === "valid" ? "有效" : status.configured ? "需更新" : "未配置"} /></div>
+        <div className="connection-summary-meta">
+          <span>{status.accountMid ? `UID ${status.accountMid}` : "扫码后显示账号信息"}</span>
+          <span>连接方式：{status.loginMethod ? methodLabels[status.loginMethod] ?? status.loginMethod : "—"}</span>
+          <span>更新于 {dateLabel(status.updatedAt)}</span>
+          <span>上次验证 {dateLabel(status.lastCheckedAt)}</span>
         </div>
-        <Tabs className="session-connect-tabs" items={[
-          { key: "qr", label: <Space><QrcodeOutlined />扫码登录</Space>, children: <div className="session-method-panel session-qr-panel">
-            <div className="session-qr-visual">
-              {qr ? <QRCode value={qr.url} size={208} /> : <div className="session-qr-empty"><QrcodeOutlined /><span>生成二维码后扫码连接</span></div>}
-            </div>
-            <div className="session-qr-instructions">
-              <span className="session-recommended">推荐方式</span>
-              <h3>用 B 站 App 扫码</h3>
-              <p>无需提供账号密码，手机确认即可连接。</p>
-              <ol><li>生成登录二维码</li><li>打开 B 站 App 扫一扫</li><li>手机确认后检查登录状态</li></ol>
-              {notice(qrFetcher)}
-              {admin ? qr ? <qrFetcher.Form method="post">
-                <input type="hidden" name="qrcodeKey" value={qr.key} />
-                <input type="hidden" name="qrcodeUrl" value={qr.url} />
-                <ActionButton kind="primary" htmlType="submit" name="intent" value="qr-poll" loading={qrFetcher.state !== "idle"}>检查登录状态</ActionButton>
-                <ActionButton kind="tertiary" htmlType="submit" name="intent" value="qr-start" loading={qrFetcher.state !== "idle"}>重新生成</ActionButton>
-              </qrFetcher.Form> : <qrFetcher.Form method="post"><ActionButton kind="primary" htmlType="submit" name="intent" value="qr-start" loading={qrFetcher.state !== "idle"}>生成二维码</ActionButton></qrFetcher.Form> : <p className="preferences-helper">仅管理员可连接账号。</p>}
-            </div>
-          </div> },
-          { key: "password", label: <Space><LockOutlined />账号密码</Space>, children: <div className="session-method-panel">
-            <div className="session-form-heading"><h3>一次性账号登录</h3><p>密码仅用于本次登录，不会保存。</p></div>
-            {!loaderData.localAccess ? <Alert type="warning" showIcon title="请在本机打开此页面，或改用扫码登录。" /> : null}
-            {notice(passwordFetcher, "password")}
-            <passwordFetcher.Form method="post" autoComplete="off" className="session-form">
-              <label className="field-label" htmlFor="bili-username">手机号 / 邮箱 / 用户名</label>
-              <Input id="bili-username" name="username" prefix={<KeyOutlined />} disabled={!admin || !loaderData.localAccess} autoComplete="username" placeholder="输入 B 站账号" />
-              <label className="field-label" htmlFor="bili-password">B 站密码</label>
-              <Input.Password id="bili-password" name="password" prefix={<LockOutlined />} disabled={!admin || !loaderData.localAccess} autoComplete="current-password" placeholder="输入账号密码" />
-              <ActionButton className="modal-submit" kind="primary" htmlType="submit" name="intent" value="password" disabled={!admin || !loaderData.localAccess} loading={passwordFetcher.state !== "idle"}>登录并连接</ActionButton>
-            </passwordFetcher.Form>
-            <p className="preferences-helper">需要验证码或设备确认时，请使用扫码登录。</p>
-          </div> },
-          { key: "cookie", label: <Space><KeyOutlined />手动 Cookie</Space>, children: <div className="session-method-panel">
-            <div className="session-form-heading"><h3>导入已有会话</h3><p>验证后加密保存，不会回显 Cookie。</p></div>
-            {!loaderData.localAccess ? <Alert type="warning" showIcon title="Cookie 仅支持在本机录入，请在 localhost 打开。" /> : null}
-            {notice(cookieFetcher, "manual")}
-            <cookieFetcher.Form method="post" className="session-form">
-              <label className="field-label" htmlFor="bili-cookie">B 站 Cookie</label>
-              <Input.TextArea id="bili-cookie" name="cookie" rows={6} disabled={!admin || !loaderData.localAccess} placeholder="粘贴完整 Cookie" />
-              <ActionButton className="modal-submit" kind="primary" htmlType="submit" name="intent" value="manual" disabled={!admin || !loaderData.localAccess} loading={cookieFetcher.state !== "idle"}>验证并保存</ActionButton>
-            </cookieFetcher.Form>
-          </div> },
-        ]} />
-        <div className="session-security-footer"><SafetyCertificateOutlined /><span>会话加密保存 · 账号密码不持久化</span></div>
-      </section>
-      <aside className="preferences-aside">
-        <section className="preferences-panel session-account-panel">
-          <div className="preferences-panel-heading"><h2>当前连接</h2><StatusBadge status={status.status === "valid" ? "success" : "warning"} label={status.status === "valid" ? "有效" : status.configured ? "需更新" : "未配置"} /></div>
-          <div className="preferences-panel-body">
-            <div className="session-account"><span className="preferences-icon"><SafetyCertificateOutlined /></span><div><strong>{status.accountName ?? "尚未连接账号"}</strong><span>{status.accountMid ? `UID ${status.accountMid}` : "连接后显示账号信息"}</span></div></div>
-            <dl className="preferences-details">
-              <div><dt>连接方式</dt><dd>{status.loginMethod ? methodLabels[status.loginMethod] ?? status.loginMethod : "—"}</dd></div>
-              <div><dt>更新时间</dt><dd>{status.updatedAt ? new Date(status.updatedAt).toLocaleString("zh-CN") : "—"}</dd></div>
-              <div><dt>上次验证</dt><dd>{status.lastCheckedAt ? new Date(status.lastCheckedAt).toLocaleString("zh-CN") : "—"}</dd></div>
-            </dl>
-            {admin ? <checkFetcher.Form method="post"><ActionButton kind="secondary" htmlType="submit" name="intent" value="check" block disabled={!status.configured} loading={checkFetcher.state !== "idle"}>检测当前会话</ActionButton></checkFetcher.Form> : null}
-            {notice(checkFetcher, "check")}
-          </div>
-        </section>
-        <section className="preferences-note"><h3>会话失效怎么办？</h3><p>重新扫码即可更新连接。平台要求验证时，请在 B 站 App 中完成确认。</p></section>
+      </div>
+      {admin ? <checkFetcher.Form method="post"><ActionButton kind="secondary" htmlType="submit" name="intent" value="check" disabled={!status.configured} loading={checkFetcher.state !== "idle"}>检测会话</ActionButton></checkFetcher.Form> : null}
+    </section>
+    {notice(checkFetcher, "check")}
+    <div className="settings-workspace">
+      <aside className="settings-section-nav">
+        <h2>更新连接</h2><p>选择一种方式获取或更新会话。</p>
+        <nav aria-label="连接方式">
+          {methods.map((item) => <button key={item.key} type="button" className={method === item.key ? "settings-nav-item is-active" : "settings-nav-item"} aria-pressed={method === item.key} aria-controls={`connection-${item.key}`} onClick={() => setMethod(item.key)}>
+            <span className="settings-nav-icon">{item.icon}</span>
+            <span className="settings-nav-copy"><span className="settings-nav-title">{item.title}<span className={item.key === "qr" ? "settings-method-tag recommended" : "settings-method-tag"}>{item.badge}</span></span><span className="settings-nav-description">{item.description}</span></span>
+            <RightOutlined />
+          </button>)}
+        </nav>
       </aside>
+      <div className="settings-active-surface">
+        <section id="connection-qr" hidden={method !== "qr"} aria-label="扫码登录">
+          <header className="settings-surface-title"><h2>扫码登录</h2><p>使用 B 站 App 扫描二维码，完成登录并建立会话。</p></header>
+          <div className="connection-scan-layout">
+            <div className="connection-qr-stage">
+              <div className="connection-qr-frame">{qr ? <QRCode value={qr.url} size={220} /> : <QrcodeOutlined className="connection-qr-symbol" />}</div>
+              {admin ? <qrFetcher.Form method="post">
+                {qr ? <><input type="hidden" name="qrcodeKey" value={qr.key} /><input type="hidden" name="qrcodeUrl" value={qr.url} /></> : null}
+                <ActionButton kind="primary" htmlType="submit" name="intent" value={qr ? "qr-poll" : "qr-start"} block loading={qrFetcher.state !== "idle"}>{qr ? "检查登录状态" : "生成二维码"}</ActionButton>
+                {qr ? <ActionButton kind="tertiary" htmlType="submit" name="intent" value="qr-start" block disabled={qrFetcher.state !== "idle"}>重新生成</ActionButton> : null}
+              </qrFetcher.Form> : <p className="settings-muted">仅管理员可连接账号。</p>}
+            </div>
+            <div className="connection-scan-guide"><h3>操作步骤</h3><ol>
+              <li><span>1</span><div><strong>生成登录二维码</strong><p>点击「生成二维码」。</p></div></li>
+              <li><span>2</span><div><strong>打开 B 站 App 扫一扫</strong><p>扫描二维码，在手机上确认登录。</p></div></li>
+              <li><span>3</span><div><strong>检查登录状态</strong><p>确认后返回本页，点击「检查登录状态」。</p></div></li>
+            </ol></div>
+          </div>
+          {notice(qrFetcher)}
+        </section>
+        <section id="connection-password" hidden={method !== "password"} aria-label="账号密码">
+          <header className="settings-surface-title"><h2>账号密码</h2><p>密码仅用于本次登录，不会保存。</p></header>
+          {!loaderData.localAccess ? <Alert type="warning" showIcon title="请在本机打开此页面，或改用扫码登录。" /> : null}
+          {notice(passwordFetcher, "password")}
+          <passwordFetcher.Form method="post" autoComplete="off" className="connection-entry-form">
+            <label htmlFor="bili-username">手机号 / 邮箱 / 用户名</label>
+            <Input id="bili-username" name="username" prefix={<UserOutlined />} disabled={!admin || !loaderData.localAccess} autoComplete="username" placeholder="输入 B 站账号" />
+            <label htmlFor="bili-password">B 站密码</label>
+            <Input.Password id="bili-password" name="password" prefix={<LockOutlined />} disabled={!admin || !loaderData.localAccess} autoComplete="current-password" placeholder="输入账号密码" />
+            <div className="connection-form-actions"><ActionButton kind="primary" htmlType="submit" name="intent" value="password" disabled={!admin || !loaderData.localAccess} loading={passwordFetcher.state !== "idle"}>登录并连接</ActionButton></div>
+          </passwordFetcher.Form>
+          <p className="settings-muted">需要验证码或设备确认时，请使用扫码登录。</p>
+        </section>
+        <section id="connection-cookie" hidden={method !== "cookie"} aria-label="手动 Cookie">
+          <header className="settings-surface-title"><h2>手动 Cookie</h2><p>导入已有会话，验证后加密保存。</p></header>
+          {!loaderData.localAccess ? <Alert type="warning" showIcon title="Cookie 仅支持在本机录入，请在 localhost 打开。" /> : null}
+          {notice(cookieFetcher, "manual")}
+          <cookieFetcher.Form method="post" className="connection-entry-form">
+            <label htmlFor="bili-cookie">B 站 Cookie</label>
+            <Input.TextArea id="bili-cookie" name="cookie" rows={7} disabled={!admin || !loaderData.localAccess} placeholder="粘贴完整 Cookie" />
+            <div className="connection-form-actions"><ActionButton kind="primary" htmlType="submit" name="intent" value="manual" disabled={!admin || !loaderData.localAccess} loading={cookieFetcher.state !== "idle"}>验证并保存</ActionButton></div>
+          </cookieFetcher.Form>
+        </section>
+        <footer className="connection-security"><SafetyCertificateOutlined /><span>会话加密保存 · 账号密码不持久化</span></footer>
+      </div>
     </div>
   </div>;
 }
